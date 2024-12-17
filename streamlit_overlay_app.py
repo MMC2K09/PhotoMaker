@@ -2,33 +2,39 @@ import streamlit as st
 from PIL import Image
 
 # App title and description
-st.title("🎨 PNG Overlay Tool")
+st.title("🎨 Image Overlay Tool")
 st.write(
     """
-    Upload a base image and one or more PNG overlays. Adjust their size and position 
-    to create a new image. Download your final result.
+    Upload a base image (PNG, JPG, or JPEG) and one or more overlay images (PNG, JPG, or JPEG). 
+    Adjust their size and position to create a new combined image. Download your final result!
     """
 )
 
 # File uploader for the base image
 st.header("Step 1: Upload the Base Image")
-base_image_file = st.file_uploader("Upload a Base Image (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+base_image_file = st.file_uploader(
+    "Upload a Base Image (PNG, JPG, or JPEG)", type=["png", "jpg", "jpeg"]
+)
 
 # Check if the base image is uploaded
 if base_image_file:
     base_image = Image.open(base_image_file).convert("RGBA")
-    st.image(base_image, caption="Base Image", use_column_width=True)
+    st.image(base_image, caption="Base Image", use_container_width=True)
 
     # File uploader for overlay images
     st.header("Step 2: Upload Overlay Images")
-    overlay_files = st.file_uploader("Upload Overlay Images (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    overlay_files = st.file_uploader(
+        "Upload Overlay Images (PNG, JPG, or JPEG)",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True,
+    )
 
     if overlay_files:
         # Process overlays
         overlays = [Image.open(file).convert("RGBA") for file in overlay_files]
-        
+
         # Sidebar for adjustments
-        st.sidebar.header("Adjust Overlays")
+        st.sidebar.header("Overlay Adjustments")
         overlayed_images = []
 
         for i, overlay in enumerate(overlays):
@@ -53,7 +59,7 @@ if base_image_file:
 
         # Display the final image
         st.header("Step 3: Final Image")
-        st.image(base_image_copy, caption="Final Image", use_column_width=True)
+        st.image(base_image_copy, caption="Final Image", use_container_width=True)
 
         # Download button for the final image
         final_image_path = "final_image.png"
