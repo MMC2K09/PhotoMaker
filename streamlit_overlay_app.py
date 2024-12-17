@@ -12,12 +12,13 @@ def add_text_to_image(image, text, position, font_size=50, font_color=(255, 255,
         st.warning("Font file not found. Please ensure TiroBangla-Regular.ttf is in the assets folder.")
         font = ImageFont.load_default()
     
-    # Calculate text size
-    text_width, text_height = draw.textsize(text, font=font)
-    
+    # Calculate text size using textbbox (newer Pillow versions)
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_width, text_height = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
+
     # Adjust position for centered alignment
     position = (position[0] - text_width // 2, position[1])
-    
+
     # Draw text
     draw.text(position, text, font=font, fill=font_color)
     return image
