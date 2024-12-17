@@ -1,12 +1,24 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
+
+# Function to add text to an image
+def add_text_to_image(image, text, position, font_size=50, font_color=(255, 255, 255)):
+    draw = ImageDraw.Draw(image)
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except IOError:
+        font = ImageFont.load_default()
+    text_width, text_height = draw.textsize(text, font=font)
+    position = (position[0] - text_width // 2, position[1])  # Centering the text horizontally
+    draw.text(position, text, font=font, fill=font_color)
+    return image
 
 # App title and description
 st.title("🎨 Image Overlay Tool")
 st.write(
     """
     Upload a base image (PNG, JPG, or JPEG) and one or more overlay images (PNG, JPG, or JPEG). 
-    Adjust their size and position to create a new combined image. Download your final result!
+    Adjust their size and position to create a new combined image. Add text to the bottom as a heading!
     """
 )
 
@@ -29,41 +41,41 @@ if base_image_file:
         accept_multiple_files=True,
     )
 
+    # Load the app's logo (from file, not uploaded by the user)
+    logo = Image.open("assets/logo.png").convert("RGBA")  # Adjust path as needed
+
+    # Resize the logo
+    logo_size = (100, 100)  # Customize the size of the logo
+    logo = logo.resize(logo_size)
+
+    # Check if overlay images are uploaded
     if overlay_files:
-        # Process overlays
         overlays = [Image.open(file).convert("RGBA") for file in overlay_files]
 
-        # Sidebar for adjustments
-        st.sidebar.header("Overlay Adjustments")
-        overlayed_images = []
+        # Add the first overlay in the top portion
+        second_overlay = overlays[0]
+        max_height = base_image.height // 2  # Limiting to top portion
+        second_overlay = second_overlay.resize(
+            (base_image.width, min(second_overlay.height, max_height))
+        )
+        base_image.paste(second_overlay, (0, 0), second_overlay)
 
-        for i, overlay in enumerate(overlays):
-            st.sidebar.subheader(f"Overlay {i + 1}")
-            x = st.sidebar.slider(f"X Position (Overlay {i + 1})", 0, base_image.width, 0)
-            y = st.sidebar.slider(f"Y Position (Overlay {i + 1})", 0, base_image.height, 0)
-            scale = st.sidebar.slider(f"Scale % (Overlay {i + 1})", 10, 200, 100)
+        # Overlay the logo in the top-right corner
+        logo_x = base_image.width - logo.width - 20  # 20px padding from right
+        logo_y = 20  # 20px padding from top
+        base_image.paste(logo, (logo_x, logo_y), logo)
 
-            # Resize overlay
-            overlay_resized = overlay.resize(
-                (
-                    int(overlay.width * scale / 100),
-                    int(overlay.height * scale / 100),
-                )
-            )
-            overlayed_images.append((overlay_resized, (x, y)))
-
-        # Merge overlays with the base image
-        base_image_copy = base_image.copy()
-        for overlay_resized, position in overlayed_images:
-            base_image_copy.paste(overlay_resized, position, overlay_resized)
+        # Add text heading below the center line (in the bottom half)
+        text = "This is a Heading!"  # Customize this text as needed
+        base_image = add_text_to_image(base_image, text, (base_image.width // 2, base_image.height // 2 + 100))
 
         # Display the final image
         st.header("Step 3: Final Image")
-        st.image(base_image_copy, caption="Final Image", use_container_width=True)
+        st.image(base_image, caption="Final Image", use_container_width=True)
 
         # Download button for the final image
         final_image_path = "final_image.png"
-        base_image_copy.save(final_image_path)
+        base_image.save(final_image_path)
         with open(final_image_path, "rb") as file:
             st.download_button(
                 label="Download Final Image",
