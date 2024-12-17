@@ -12,7 +12,7 @@ st.write(
 
 # File uploader for the base image
 st.header("Step 1: Upload the Base Image")
-base_image_file = st.file_uploader("Upload a PNG image as the base image", type="png")
+base_image_file = st.file_uploader("Upload a Base Image (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
 
 # Check if the base image is uploaded
 if base_image_file:
@@ -21,11 +21,7 @@ if base_image_file:
 
     # File uploader for overlay images
     st.header("Step 2: Upload Overlay Images")
-    overlay_files = st.file_uploader(
-        "Upload one or more PNG images as overlays", 
-        type="png", 
-        accept_multiple_files=True
-    )
+    overlay_files = st.file_uploader("Upload Overlay Images (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
     if overlay_files:
         # Process overlays
