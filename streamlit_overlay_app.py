@@ -5,11 +5,20 @@ from PIL import Image, ImageDraw, ImageFont
 def add_text_to_image(image, text, position, font_size=50, font_color=(255, 255, 255)):
     draw = ImageDraw.Draw(image)
     try:
-        font = ImageFont.truetype("arial.ttf", font_size)
+        # Load your custom font
+        font = ImageFont.truetype("assets/TiroBangla-Regular.ttf", font_size)
     except IOError:
+        # Fallback if the font file is not found
+        st.warning("Font file not found. Please ensure TiroBangla-Regular.ttf is in the assets folder.")
         font = ImageFont.load_default()
+    
+    # Calculate text size
     text_width, text_height = draw.textsize(text, font=font)
-    position = (position[0] - text_width // 2, position[1])  # Centering the text horizontally
+    
+    # Adjust position for centered alignment
+    position = (position[0] - text_width // 2, position[1])
+    
+    # Draw text
     draw.text(position, text, font=font, fill=font_color)
     return image
 
