@@ -1,99 +1,72 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 
-# Function to add text to an image
-def add_text_to_image(image, text, position, font_size=50, font_color=(255, 255, 255)):
-    draw = ImageDraw.Draw(image)
+# Fixed canvas size
+CANVAS_SIZE = (1000, 1000)
+
+# Load font
+def load_font(font_path="assets/TiroBangla-Regular.ttf", font_size=50):
     try:
-        # Load your custom font
-        font = ImageFont.truetype("assets/TiroBangla-Regular.ttf", font_size)
+        return ImageFont.truetype(font_path, font_size)
     except IOError:
-        # Fallback if the font file is not found
-        st.warning("Font file not found. Please ensure TiroBangla-Regular.ttf is in the assets folder.")
-        font = ImageFont.load_default()
-    
-    # Calculate text size using textbbox (newer Pillow versions)
-    text_bbox = draw.textbbox((0, 0), text, font=font)
-    text_width, text_height = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
+        st.warning("Font file not found. Using default font.")
+        return ImageFont.load_default()
 
-    # Adjust position for centered alignment
-    position = (position[0] - text_width // 2, position[1])
+# Create a blank canvas
+def create_canvas(size, color=(255, 255, 255)):
+    return Image.new("RGBA", size, color)
 
-    # Draw text
-    draw.text(position, text, font=font, fill=font_color)
-    return image
+# Overlay an image onto the canvas
+def overlay_image(canvas, overlay, position, opacity=1.0):
+    overlay = overlay.convert("RGBA")
+    if opacity < 1.0:
+        overlay.putalpha(int(255 * opacity))
+    canvas.paste(overlay, position, overlay)
+    return canvas
 
-# App title and description
-st.title("🎨 Image Overlay Tool")
-st.write(
-    """
-    Upload a base image (PNG, JPG, or JPEG) and one or more overlay images (PNG, JPG, or JPEG). 
-    Adjust their size and position to create a new combined image. Add text to the bottom as a heading!
-    """
-)
+# App title
+st.title("Modern Image Overlay Tool")
 
-# File uploader for the base image
-st.header("Step 1: Upload the Base Image")
-base_image_file = st.file_uploader(
-    "Upload a Base Image (PNG, JPG, or JPEG)", type=["png", "jpg", "jpeg"]
-)
+# Step 1: Load base canvas
+st.sidebar.header("Step 1: Base Canvas")
+canvas_color = st.sidebar.color_picker("Choose Canvas Background", "#FFFFFF")
+canvas_color_rgb = tuple(int(canvas_color[i:i+2], 16) for i in (1, 3, 5))  # Convert HEX to RGB
+canvas = create_canvas(CANVAS_SIZE, canvas_color_rgb)
 
-# Check if the base image is uploaded
-if base_image_file:
-    base_image = Image.open(base_image_file).convert("RGBA")
-    st.image(base_image, caption="Base Image", use_container_width=True)
+# Sidebar for adding overlays
+st.sidebar.header("Step 2: Add Overlay Images")
+overlay_file = st.sidebar.file_uploader("Upload an Overlay Image", type=["png", "jpg", "jpeg"])
+resize_width = st.sidebar.slider("Resize Width", 50, CANVAS_SIZE[0], 200)
+resize_height = st.sidebar.slider("Resize Height", 50, CANVAS_SIZE[1], 200)
+overlay_x = st.sidebar.slider("X Position", 0, CANVAS_SIZE[0], 0)
+overlay_y = st.sidebar.slider("Y Position", 0, CANVAS_SIZE[1], 0)
+overlay_opacity = st.sidebar.slider("Opacity", 0.0, 1.0, 1.0)
 
-    # File uploader for overlay images
-    st.header("Step 2: Upload Overlay Images")
-    overlay_files = st.file_uploader(
-        "Upload Overlay Images (PNG, JPG, or JPEG)",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-    )
+if overlay_file:
+    overlay = Image.open(overlay_file).convert("RGBA")
+    overlay = overlay.resize((resize_width, resize_height))
+    canvas = overlay_image(canvas, overlay, (overlay_x, overlay_y), overlay_opacity)
 
-    # Load the app's logo (from file, not uploaded by the user)
-    logo = Image.open("assets/logo.png").convert("RGBA")  # Adjust path as needed
+# Step 3: Add text to the canvas
+st.sidebar.header("Step 3: Add Text")
+text = st.sidebar.text_input("Text to Add")
+text_size = st.sidebar.slider("Font Size", 10, 100, 30)
+text_color = st.sidebar.color_picker("Text Color", "#000000")
+text_x = st.sidebar.slider("X Position (Text)", 0, CANVAS_SIZE[0], CANVAS_SIZE[0] // 2)
+text_y = st.sidebar.slider("Y Position (Text)", 0, CANVAS_SIZE[1], CANVAS_SIZE[1] - 100)
 
-    # Resize the logo
-    logo_size = (100, 100)  # Customize the size of the logo
-    logo = logo.resize(logo_size)
+if text:
+    draw = ImageDraw.Draw(canvas)
+    font = load_font(font_size=text_size)
+    text_position = (text_x - text_size // 2, text_y)
+    draw.text(text_position, text, fill=text_color, font=font)
 
-    # Check if overlay images are uploaded
-    if overlay_files:
-        overlays = [Image.open(file).convert("RGBA") for file in overlay_files]
+# Step 4: Display the final canvas
+st.header("Final Canvas")
+st.image(canvas, caption="Final Image", use_container_width=True)
 
-        # Add the first overlay in the top portion
-        second_overlay = overlays[0]
-        max_height = base_image.height // 2  # Limiting to top portion
-        second_overlay = second_overlay.resize(
-            (base_image.width, min(second_overlay.height, max_height))
-        )
-        base_image.paste(second_overlay, (0, 0), second_overlay)
-
-        # Overlay the logo in the top-right corner
-        logo_x = base_image.width - logo.width - 20  # 20px padding from right
-        logo_y = 20  # 20px padding from top
-        base_image.paste(logo, (logo_x, logo_y), logo)
-
-        # Add text heading below the center line (in the bottom half)
-        text = "This is a Heading!"  # Customize this text as needed
-        base_image = add_text_to_image(base_image, text, (base_image.width // 2, base_image.height // 2 + 100))
-
-        # Display the final image
-        st.header("Step 3: Final Image")
-        st.image(base_image, caption="Final Image", use_container_width=True)
-
-        # Download button for the final image
-        final_image_path = "final_image.png"
-        base_image.save(final_image_path)
-        with open(final_image_path, "rb") as file:
-            st.download_button(
-                label="Download Final Image",
-                data=file,
-                file_name="final_image.png",
-                mime="image/png",
-            )
-    else:
-        st.warning("Please upload at least one overlay image.")
-else:
-    st.info("Please upload a base image to start.")
+# Step 5: Download final image
+final_image_path = "final_canvas.png"
+canvas.save(final_image_path)
+with open(final_image_path, "rb") as file:
+    st.download_button("Download Final Image", data=file, file_name="final_image.png", mime="image/png")
