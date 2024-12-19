@@ -13,32 +13,51 @@ FONT_PATH = "assets/TiroBangla-Regular.ttf"
 # App Title
 st.title("Fixed Canvas Image Editor")
 
-# Step 1: Initialize Canvas
+# Initialize Canvas
 canvas_color = st.color_picker("Canvas Background Color", "#FFFFFF")
 canvas = create_canvas(CANVAS_SIZE, canvas_color)
 
-# Step 2: Display Initial Canvas
-st.image(canvas, caption="Canvas Preview", use_container_width=True)
+# Display Sticky Canvas Preview
+st.markdown(
+    """
+    <style>
+    .sticky-canvas {
+        position: -webkit-sticky; /* For Safari */
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: white;
+        padding: 10px 0;
+        text-align: center;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    </style>
+    <div class="sticky-canvas">
+        <img src="data:image/png;base64,{}" alt="Canvas Preview" style="width: 100%; max-width: 1000px;">
+    </div>
+    """.format(canvas._repr_png_().decode("utf-8")),
+    unsafe_allow_html=True,
+)
 
-# Step 3: Add Overlay
-st.header("Overlay Tools")
+# Tools Section
+st.header("Editing Tools")
+
+# Add Overlay
+st.subheader("Overlay Tools")
 canvas = add_overlay(canvas)
 
-# Step 4: Add Logo
+# Add Logo
 add_logo(canvas, LOGO_PATH)
 
-# Step 5: Add Text
-st.header("Text Tools")
+# Add Text
+st.subheader("Text Tools")
 canvas = add_text(canvas, FONT_PATH)
 
-# Step 6: Crop Canvas
-st.header("Cropping Tools")
+# Crop Canvas
+st.subheader("Cropping Tools")
 canvas = crop_canvas(canvas)
 
-# Step 7: Updated Canvas Preview
-st.image(canvas, caption="Updated Canvas Preview", use_container_width=True)
-
-# Step 8: Download Final Image
+# Save and Download Final Image
 final_image_path = "final_canvas.png"
 canvas.save(final_image_path)
 with open(final_image_path, "rb") as file:
